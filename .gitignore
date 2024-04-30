@@ -1,0 +1,11 @@
+# List of working files to be ignored in the repository.
+
+# Ignore vi editor swap files
+*.swp
+*.swo
+
+# Ignore Microsoft Office temporary files
+~$*
+
+# Ignore log files globally
+*.log

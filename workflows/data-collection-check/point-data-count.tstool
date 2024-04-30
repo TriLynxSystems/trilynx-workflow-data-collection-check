@@ -1,0 +1,148 @@
+CreateFolder(Folder="results",IfFolderExists="Ignore")
+StartLog(LogFile="results/point-data-count.tstool.log")
+#
+# Workflow to create heat maps of 1Day count for all points (sensors):
+# - this can be used to identify stations/points that are not working or are misconfigured
+# - the heatmap images are static and can be difficult to read text
+# - run interactively and mouse over the blanks to identify problem points/stations
+#
+#@docUrl https://bitbucket.org/trilynxsystems/trilynx-workflow-novastar-perf/src/main/CO-Company-TriLynx/point-data-check/README.md
+#@sourceUrl https://bitbucket.org/trilynxsystems/trilynx-workflow-novastar-perf/src/main/CO-Company-TriLynx/point-data-check/point-data-count.tstool
+#@version 1.1.0
+#@versionDate 2024-04-15
+#
+# Set the datastore to process:
+# - all other commands use the property so just need to set once here
+SetProperty(PropertyName="datastore",PropertyType="String",PropertyValue="nsdataws-larimer")
+#
+# Determine whether the Count statistic is available:
+# - was added to web services in version 1.10.1
+# - TODO smalers 2024-04-14 could possibly use WebGet and figure out,
+#   but would be hard-coding the datastore URL so would not be flexible.
+#   Maybe need a way to set a processor property from datastore property.
+SetProperty(PropertyName="CheckStatistic",PropertyType="String",PropertyValue="Count")
+SetProperty(PropertyName="CheckStatistic",PropertyType="String",PropertyValue="Mean")
+#
+# Set the input period to a period of interest:
+# - for example, before a system update, pick a period when data collection is active
+# - after an update, use a recent period to see if data collection is working
+SetInputPeriod(InputStart="2024-03-20",InputEnd="2024-03-25")
+# Set global configuration properties:
+# - ListReadStart and ListReadEnd are a short period to get a list of available time series
+# - ReadStart and ReadEnd are the period to read to analyze for missing data
+# - CheckStatistic should be "Count" if the web services version supports Count, and "Mean" otherwise
+# - set Testing=true if testing with a subset of the data
+SetProperty(PropertyName="ListReadStart",PropertyType="DateTime",PropertyValue="2024-03-20T00:00:00")
+SetProperty(PropertyName="ListReadEnd",PropertyType="DateTime",PropertyValue="CurrentToSecond")
+SetProperty(PropertyName="ReadStart",PropertyType="DateTime",PropertyValue="CurrentToSecond - 1Month")
+SetProperty(PropertyName="ReadEnd",PropertyType="DateTime",PropertyValue="CurrentToSecond")
+SetProperty(PropertyName="CurrentTime",PropertyType="DateTime",PropertyValue="CurrentToSecond")
+# SetProperty(PropertyName="Testing",PropertyType="Boolean",PropertyValue="true")
+SetProperty(PropertyName="Testing",PropertyType="Boolean",PropertyValue="false")
+#
+# Set the input period to read a short period to read the time series list.
+SetInputPeriod(InputStart="${ListReadStart}",InputEnd="${ListReadEnd}")
+#
+# First read all IrregSecond scaled value time series:
+# - these correspond to point data so gives a list of data collection time series
+# - there will be some errors due to missing SHEF parameter codes, etc.
+# SetDebugLevel(LogFileLevel="1")
+# When developing the workflow, only read one data type.  Otherwise, the full workflow is slow.
+If(Name="If_Test",Condition="${Testing} == true")
+    ReadNovaStar(DataStore="${datastore}",DataType="TempAir",Interval="IrregSecond",Where1="IncludeScaledTS;Matches;Only",Alias="%L-%T-%I")
+    ReadNovaStar(DataStore="${datastore}",DataType="TempWater",Interval="IrregSecond",Where1="IncludeScaledTS;Matches;Only",Alias="%L-%T-%I")
+EndIf(Name="If_Test")
+If(Name="If_NotTest",Condition="${Testing} != true")
+    ReadNovaStar(DataStore="${datastore}",DataType="*",Interval="IrregSecond",Where1="IncludeScaledTS;Matches;Only",Alias="%L-%T-%I")
+EndIf(Name="If_NotTest")
+# SetDebugLevel(ScreenLevel="0",LogFileLevel="0")
+#
+# Sort the time series so that the original time series are in the same order as sorted interval time series below:
+# - this makes it easier to compare NO DATA items
+# - the properties are case-specific
+SortTimeSeries(PropertyFormat="${ts:dataType},${ts:locId}")
+#
+# Copy the time series properties to a table:
+# - this allows the data types to be processed separately
+# - set the stationOutOfServiceString property on the time series because SelectTimeSeries only handles string properties
+# - set the pointOutOfServiceString property on the time series because SelectTimeSeries only handles string properties
+# - this is a workaround because ReadNovaStar filters don't handle stationOutOfService and pointOutOfService
+# CopyTimeSeriesPropertiesToTable(IncludeBuiltInProperties="*",TableID="TimeSeriesCatalog",TableTSIDColumn="TSID",TableTSIDFormat="%F",NameMap="alias:Alias,datatype:DataType,interval:Interval")
+CopyTimeSeriesPropertiesToTable(TableID="TimeSeriesCatalog",TableTSIDColumn="TSID",TableTSIDFormat="%F")
+FormatTableString(TableID="TimeSeriesCatalog",InputColumns="stationOutOfService",Format="%s",OutputColumn="stationOutOfServiceString",InsertBeforeColumn="stationOutOfService")
+SetTimeSeriesPropertiesFromTable(TSList="AllTS",TableID="TimeSeriesCatalog",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableInputColumns="stationOutOfServiceString")
+FormatTableString(TableID="TimeSeriesCatalog",InputColumns="pointOutOfService",Format="%s",OutputColumn="pointOutOfServiceString",InsertBeforeColumn="pointOutOfService")
+SetTimeSeriesPropertiesFromTable(TSList="AllTS",TableID="TimeSeriesCatalog",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableInputColumns="pointOutOfServiceString")
+#
+# Get the distinct data types to process below.
+CopyTable(TableID="TimeSeriesCatalog",NewTableID="DataTypes",IncludeColumns="dataType",DistinctColumns="dataType",ColumnMap="dataType:DataType")
+SortTable(TableID="DataTypes",SortColumns="DataType")
+#
+# Loop through each data type:
+# - read all the time series for each data type
+# - use the Count statistic and 1Day interval to give an indication of point data availability over time
+For(Name="For_DataType",IteratorProperty="DataType",TableID="DataTypes",TableColumn="DataType")
+    #
+    # Read the interval time series:
+    # - TODO smalers 2024-03-27 evaluate how to deal with stations that are recently turned on
+    # - include missing values to ensure that the full requested period is output
+    ReadNovaStar(DataStore="${datastore}",DataType="${DataType}",Interval="1Day",Statistic="${CheckStatistic}",InputStart="${ReadStart}",InputEnd="${ReadEnd}",IncludeMissing="True")
+    #
+    # Remove time series for out of service stations and points:
+    # - TODO this is a workaround that can be removed when web services is updated to 1.11.2
+    # - the ReadNovaStar filter on stationOutOfService=false results in a web service error
+    # - therefore free time series where the property stationOutOfService=true
+    SelectTimeSeries(DeselectAllFirst="True",PropertyName="stationOutOfServiceString",PropertyCriterion="Matches",PropertyValue="true")
+    Free(TSList="SelectedTS",IfNotFound="Ignore")
+    SelectTimeSeries(DeselectAllFirst="True",PropertyName="pointOutOfServiceString",PropertyCriterion="Matches",PropertyValue="true")
+    Free(TSList="SelectedTS",IfNotFound="Ignore")
+    # TODO smalers 2024-03-27 Need to copy the original description to the 1Day time series.
+    #
+    # Select time series matching the data type and statistic for output:
+    # - need to do this because the original time series are still in memory
+    SelectTimeSeries(TSList="AllMatchingTSID",TSID="*.*.${DataType}-${CheckStatistic}.1Day.*",DeselectAllFirst="True",IfNotFound="Warn",SelectCountProperty="DayTimeSeriesCount")
+    Message(Message="Selected ${DayTimeSeriesCount} ${DataType}-${CheckStatistic} time series for output.")
+    #
+    If(Name="If_DayTimeSeries",Condition="${DayTimeSeriesCount} > 0")
+        #
+        # Check the time series values:
+        # - check for missing values and count if CheckStatistic=Count
+        # - limit to 50 warnings per time series
+        # - output to a single table and table specific to the DataType
+        CheckTimeSeries(TSList="SelectedTS",CheckCriteria="Missing",MaxWarnings="50",TableID="CheckResults",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableDateTimeColumn="Date",TableValueColumn="Value",TableFlagColumn="Flag",TableCheckTypeColumn="Check",TableCheckMessageColumn="CheckMessage")
+        CheckTimeSeries(TSList="SelectedTS",CheckCriteria="Missing",MaxWarnings="50",TableID="CheckResults-${DataType}",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableDateTimeColumn="Date",TableValueColumn="Value",TableFlagColumn="Flag",TableCheckTypeColumn="Check",TableCheckMessageColumn="CheckMessage")
+        If(Name="If_CheckCount",Condition="${CheckStatistic} == Count")
+            CheckTimeSeries(TSList="SelectedTS",CheckCriteria="<",Value1="1.0",MaxWarnings="50",TableID="CheckResults",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableDateTimeColumn="Date",TableValueColumn="Value",TableFlagColumn="Flag",TableCheckTypeColumn="Check",TableCheckMessageColumn="CheckMessage")
+            CheckTimeSeries(TSList="SelectedTS",CheckCriteria="<",Value1="1.0",MaxWarnings="50",TableID="CheckResults-${DataType}",TableTSIDColumn="TSID",TableTSIDFormat="%F",TableDateTimeColumn="Date",TableValueColumn="Value",TableFlagColumn="Flag",TableCheckTypeColumn="Check",TableCheckMessageColumn="CheckMessage")
+        EndIf(Name="If_CheckCount")
+        #
+        # Check if the time series has no data:
+        # - TODO smalers 2024-03-27 could improve this by ensuring that the table exists
+        For(Name="For_DataTypeTimeSeries",IteratorProperty="TSID",IteratorValueProperty="tsid",TSList="SelectedTS")
+            If(Name="If_NoData",TSHasData="${TSID}")
+                InsertTableRow(TableID="CheckResults",ColumnValues="TSID:${TSID},Check:NoData,CheckMessage:Time series ${TSID} has no data")
+                InsertTableRow(TableID="CheckResults-${DataType}",ColumnValues="TSID:${TSID},Check:NoData,CheckMessage:Time series ${TSID} has no data")
+            EndIf(Name="If_NoData")
+        EndFor(Name="For_DataTypeTimeSeries")
+        #
+        # Output the check results for the DataType.
+        WriteTableToDelimitedFile(TableID="CheckResults-${DataType}",OutputFile="results/CheckResults-${DataType}.csv",WriteHeaderComments="False")
+        #
+        # Expand the heatmap template:
+        # - copy the list of selected time series TSID from the time series to a table, to use in template expansion
+        # - because a TSID column is required, the LocId column is set twice to the same value
+        # - make sure to free the list table because otherwise will append
+        If(Name="If_TSIDList",TableExists="TSIDList")
+            FreeTable(TableID="TSIDList")
+        EndIf(Name="If_TSIDList")
+        CopyTimeSeriesPropertiesToTable(TSList="SelectedTS",IncludeProperties="xxx",TableID="TSIDList",TableTSIDColumn="TSID",TableTSIDFormat="%F")
+        SortTable(TableID="TSIDList",SortColumns="TSID")
+        ExpandTemplateFile(InputFile="point-data-count-heatmap-template.tsp",OutputFile="results/point-data-count-heatmap-${DataType}.tsp")
+        #
+        # Process the heat map to an image and also show in a window.
+        ProcessTSProduct(TSProductFile="point-data-count-heatmap-template.tsp",View="False",OutputFile="results/point-data-count-heatmap-${DataType}.png")
+    EndIf(Name="If_DayTimeSeries")
+    #
+    # Output the shared check file.
+    WriteTableToDelimitedFile(TableID="CheckResults",OutputFile="results/CheckResults.csv",WriteHeaderComments="False")
+EndFor(Name="For_DataType")
