@@ -5,6 +5,7 @@
 *   [Workflow Overview](#workflow-overview)
 *   [Workflow Results](#workflow-results)
 *   [Outstanding Issues](#outstanding-issues)
+*   [Release Notes](#release-notes)
 *   [License](#license)
 
 -----------------
@@ -97,6 +98,13 @@ The heatmap indicates the following:
 ## Outstanding Issues ##
 
 See the repository issues.
+
+## Release Notes ##
+
+The following are release notes for this workflow.
+
+*   1.0.0:
+    +   Initial version.
 
 ## License ##
 
