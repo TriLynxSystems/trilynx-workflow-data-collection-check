@@ -7,7 +7,7 @@ StartLog(LogFile="results/point-data-count.tstool.log")
 # - run interactively and mouse over the blanks to identify problem points/stations
 #
 #@docUrl https://github.com/TriLynxSystems/trilynx-workflow-ns-data-collection-check/tree/main/workflows/point-data-count
-#@sourceUrl https://github.com/TriLynxSystems/trilynx-workflow-ns-data-collection-check/blob/main/workflows/point-data-count/point-data-count.tstool
+#@sourceUrl https://raw.githubusercontent.com/TriLynxSystems/trilynx-workflow-ns-data-collection-check/main/workflows/point-data-count/point-data-count.tstool
 #@version 1.1.0
 #@versionDate 2024-04-15
 #
