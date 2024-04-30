@@ -6,7 +6,7 @@ StartLog(LogFile="results/point-data-count.tstool.log")
 # - the heatmap images are static and can be difficult to read text
 # - run interactively and mouse over the blanks to identify problem points/stations
 #
-#@docUrl https://bitbucket.org/trilynxsystems/trilynx-workflow-novastar-perf/src/main/CO-Company-TriLynx/point-data-check/README.md
+#@docUrl https://github.com/TriLynxSystems/trilynx-workflow-ns-data-collection-check/tree/main/workflows/point-data-count
 #@sourceUrl https://github.com/TriLynxSystems/trilynx-workflow-ns-data-collection-check/blob/main/workflows/point-data-count/point-data-count.tstool
 #@version 1.1.0
 #@versionDate 2024-04-15
