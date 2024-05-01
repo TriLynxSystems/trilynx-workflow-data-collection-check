@@ -53,4 +53,4 @@ The following workflows are included in this repository:
 
 | **Workflow** | **Description** |
 | -- | -- |
-| [`point-data-count`](workflows/point-data-count/README.md) | Create information products for 1-day count of data values, useful for high-level check of data collection. |
+| [`point-data-count`](workflows/point-data-count/) | Create information products for 1-day count of data values, useful for high-level check of data collection. |
