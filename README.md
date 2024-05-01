@@ -7,6 +7,8 @@ This repository contains a workflow to check that a NovaStar system's points (se
 *   performs checks to make sure that data are being collected for all points (sensors)
 *   additional workflows may be added in the future
 
+The following sections are available below:
+
 *   [Repository Contents](#repository-contents)
 *   [Environment Configuration](#environment-configuration)
 *   [Workflows](#workflows)
@@ -51,4 +53,4 @@ The following workflows are included in this repository:
 
 | **Workflow** | **Description** |
 | -- | -- |
-| [`point-data-count`](workflows/point-data-count/README.md) | Create information products for 1 day count of data values, useful for high-level check of data collection. |
+| [`point-data-count`](workflows/point-data-count/README.md) | Create information products for 1-day count of data values, useful for high-level check of data collection. |
