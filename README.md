@@ -4,9 +4,14 @@ This repository contains a workflow to check that a NovaStar system's points (se
 
 *   uses the [TSTool software](https://software.trilynx.systems) and
     TSTool data web services plugin with NovaStar data web services
-*   performs a gross analysis of data collection for every point (sensor) in a NovaStar system
-*   checks that the daily count of data values is > 1
-*   other workflows are available to perform more granular data checks for ALERT2 and other data feeds
+*   performs checks to make sure that data are being collected for all points (sensors)
+*   additional workflows may be added in the future
+
+*   [Repository Contents](#repository-contents)
+*   [Environment Configuration](#environment-configuration)
+*   [Workflows](#workflows)
+
+-----
 
 ## Repository Contents ##
 
@@ -39,3 +44,11 @@ See the `README.md` files in each folder for an explanation of workflows.
 ## Environment Configuration ##
 
 The workflows require that TSTool and the TSTool `nsdataws` plugin are installed.
+
+## Workflows ##
+
+The following workflows are included in this repository:
+
+| **Workflow** | **Description** |
+| -- | -- |
+| [`point-data-count`](workflows/point-data-count/README.md) | Create information products for 1 day count of data values, useful for high-level check of data collection. |

@@ -83,17 +83,32 @@ The heatmap indicates the following:
         to filter out of default web services output.
     +   If the station is retired, remove the station from the database or set `Status=retired` in the station description
         to filter out of default web services output.
-    +   If the station did not collect data in the early period but did collect data in the later period,
-        it may be a new station or a station that was turned on after previously being winterized.
-    +   If all or a group of stations are not receiving data at the same time, possible causes are:
-        -   ALERT receiver/decoder is offline
-        -   data source is not properly configured in NovaStar
-        -   NovaStar software bug
-    +   If a station was receiving data but is no longer receiving data:
-        -   OK if the station is shut down for the winder or has recently been retired.
-        -   OK if the station was offline due to maintenance.
-        -   Could be a problem with the station configuration in NovaStar.
-        -   Could be a problem with the station hardware.
+*   If all or a group of stations are not receiving data at the same time, possible causes are:
+    +   The ALERT/ALERT2 receiver/decoder is offline for those stations:
+        -   Contact station maintenance personnel.
+    +   The data collection program is not properly configured in NovaStar:
+        -   Contact TriLynx Systems support if help is required.
+    +   NovaStar software bug:
+        -   Contact TriLynx Systems support.
+*   If a station was NOT receiving data but is now receiving data:
+    +   It could be a new station (see the station description for installation date).
+    +   It could be a station that was previously winterized and has recently been turned on for the season.
+*   If a station was receiving data but is no longer receiving data:
+    +   OK if the station is shut down for the winder or has recently been retired.
+    +   OK if the station is offline due to extended maintenance (e.g., waiting on hardware).
+    +   Could be a problem with the station configuration in NovaStar:
+        -   Contact TriLynx systems support if help is required.
+    +   Could be a problem with the station hardware:
+        -   Contact station maintenance personnel.
+*   If a station receives data most of the time but there are periodic gaps:
+    +   The station may have received maintenance:
+        -   Query data for the `M` flag to confirm and/or contact station maintenance personnel.
+    +   If an ALERT/ALERT2 station, there may be radio path or other communication issues.
+        -   Contact station maintenance personnel.
+    +   If an import, there may have been an interruption in a third-party data system:
+        -   Data can be reloaded.  Contact TriLynx support.
+    +   A NovaStar software issue may have occurred:
+        -   Contact TriLynx support.
 
 ## Outstanding Issues ##
 
@@ -103,6 +118,8 @@ See the repository issues.
 
 The following are release notes for this workflow.
 
+*   1.1.0:
+    +   Update to use ${Property} for the `DataStore` to provide additional flexibility.
 *   1.0.0:
     +   Initial version.
 
