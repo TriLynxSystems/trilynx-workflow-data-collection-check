@@ -21,7 +21,7 @@ SetProperty(PropertyName="datastore",PropertyType="String",PropertyValue="nsdata
 #   but would be hard-coding the datastore URL so would not be flexible.
 #   Maybe need a way to set a processor property from datastore property.
 SetProperty(PropertyName="CheckStatistic",PropertyType="String",PropertyValue="Count")
-SetProperty(PropertyName="CheckStatistic",PropertyType="String",PropertyValue="Mean")
+# SetProperty(PropertyName="CheckStatistic",PropertyType="String",PropertyValue="Mean")
 #
 # Set the input period to a period of interest:
 # - for example, before a system update, pick a period when data collection is active
